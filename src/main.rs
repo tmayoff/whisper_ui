@@ -1,4 +1,5 @@
 mod models;
+mod audio;
 
 use std::path::{Path, PathBuf};
 

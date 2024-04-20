@@ -1,7 +1,0 @@
-image: fedora/39
-sources: 
-  - https://git.sr.ht/~tmayoff/WhisperUI
-tasks:
-  - build: |
-      cd WhisperUI
-      cargo build

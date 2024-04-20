@@ -12,17 +12,17 @@ pub enum WhisperModel {
 
 fn get_model_filenaame(model: WhisperModel) -> String {
     match model {
-        WhisperModel::Tiny => return "tiny".to_string(),
-        WhisperModel::Small => return "small".to_string(),
-        WhisperModel::Base => return "base".to_string(),
-        WhisperModel::Large => return "large-v2".to_string(),
+        WhisperModel::Tiny => return "ggml-tiny.bin".to_string(),
+        WhisperModel::Small => return "ggml-small.bin".to_string(),
+        WhisperModel::Base => return "ggml-base.bin".to_string(),
+        WhisperModel::Large => return "ggml-large-v2.bin".to_string(),
     }
 }
 
 pub fn download_model(model: WhisperModel) -> Result<PathBuf> {
     println!("Dowloading model {:?}", model);
     let api = Api::new().unwrap();
-    let repo = Repo::new("ggerganov".to_string(), hf_hub::RepoType::Model);
+    let repo = Repo::new("ggerganov/whisper.cpp".to_string(), hf_hub::RepoType::Model);
     let repo = api.repo(repo);
 
     let model_filename = get_model_filenaame(model);
