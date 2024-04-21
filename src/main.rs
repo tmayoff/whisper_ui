@@ -1,15 +1,15 @@
-mod models;
 mod audio;
+mod models;
 
-use std::path::{Path, PathBuf};
-
+use anyhow::Result;
 use iced::{
     widget::{button, row, text},
     Sandbox, Settings,
 };
 use models::WhisperModel;
 use rfd::FileDialog;
-use whisper_rs::{WhisperContext, WhisperContextParameters};
+use std::path::{Path, PathBuf};
+use whisper_rs::{FullParams, WhisperContext, WhisperContextParameters};
 
 use crate::models::download_model;
 
@@ -22,8 +22,13 @@ struct App {
     selected_model: WhisperModel,
 }
 
-fn whisper_process(model: WhisperModel, file: &Path) {
+fn whisper_process(model: WhisperModel, file: &Path) -> Result<()> {
+    println!("Processing: {:?}...", file);
     let model_file = download_model(model).expect("Failed to get model file");
+
+    let params = FullParams::new(whisper_rs::SamplingStrategy::Greedy { best_of: 1 });
+
+    let audio = audio::read_audio(file)?;
 
     let ctx = WhisperContext::new_with_params(
         model_file.to_str().unwrap(),
@@ -31,9 +36,18 @@ fn whisper_process(model: WhisperModel, file: &Path) {
     )
     .expect("failed to get whisper context");
 
-    
+    let mut state = ctx.create_state()?;
+    state.full(params, &audio[..])?;
 
-    println!("Processing: {:?}", file);
+    let num_segments = state.full_n_segments()?;
+    for i in 0..num_segments {
+        let segment = state.full_get_segment_text(i)?;
+        println!("{}", segment);
+    }
+        
+    println!("Done.");
+    
+    Ok(())
 }
 
 impl Sandbox for App {
