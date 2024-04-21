@@ -21,7 +21,7 @@ jobs:
 
     - name: Install dependencies
       if: ${{ matrix.os }} == 'ubuntu-latest'
-      run: apt-get install ffmpeg
+      run: sudo apt-get install ffmpeg
       
     - name: Build
       run: cargo build --verbose
