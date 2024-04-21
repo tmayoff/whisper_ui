@@ -44,9 +44,9 @@ fn whisper_process(model: WhisperModel, file: &Path) -> Result<()> {
         let segment = state.full_get_segment_text(i)?;
         println!("{}", segment);
     }
-        
+
     println!("Done.");
-    
+
     Ok(())
 }
 
@@ -56,7 +56,7 @@ impl Sandbox for App {
     fn new() -> Self {
         App {
             file_to_process: None,
-            selected_model: WhisperModel::Small,
+            selected_model: WhisperModel::Base,
         }
     }
 
@@ -77,7 +77,7 @@ impl Sandbox for App {
                 }
             }
             Message::Process(file) => {
-                whisper_process(self.selected_model, &file);
+                _ = whisper_process(self.selected_model, &file);
             }
             Message::SelectModel(_) => todo!(),
         }
