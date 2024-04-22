@@ -27,9 +27,19 @@
         src = craneLib.cleanCargoSource (craneLib.path ./.);
         strictDeps = true;
 
-        buildInputs =
+        #fixes issues related to openssl
+        OPENSSL_DIR = "${pkgs.openssl.dev}";
+        OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+        OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
+
+        nativeBuildInputs = with pkgs; [
+          libclang
+        ];
+
+        buildInputs = with pkgs;
           [
-            # Add additional build inputs here
+            pkg-config
+            openssl
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             # Additional darwin specific inputs can be set here
