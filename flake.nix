@@ -1,42 +1,66 @@
 {
+  description = "Build a cargo project without extra checks";
+
   inputs = {
-    flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
+
+    crane = {
+      url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = {
     self,
-    flake-utils,
     nixpkgs,
-    rust-overlay,
+    crane,
+    flake-utils,
+    ...
   }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        overlays = [(import rust-overlay)];
-        pkgs = (import nixpkgs) {
-          inherit system overlays;
-        };
+    flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
 
-        rust = pkgs.rust-bin.stable.latest.default;
-      in {
-        # For `nix develop`:
-        devShell = pkgs.mkShell.override {stdenv = pkgs.clangStdenv;} {
-          hardeningDisable = ["all"];
-          buildInputs = with pkgs; [
-            pkg-config
-            clang
-            openssl
-            ffmpeg
+      craneLib = crane.lib.${system};
+      whisper_ui = craneLib.buildPackage {
+        src = craneLib.cleanCargoSource (craneLib.path ./.);
+        strictDeps = true;
+
+        buildInputs =
+          [
+            # Add additional build inputs here
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            # Additional darwin specific inputs can be set here
+            pkgs.libiconv
           ];
 
-          nativeBuildInputs = [
-            (rust.override {extensions = ["rust-src"];})
-          ];
-        };
-      }
-    );
+        # Additional environment variables can be set directly
+        # MY_CUSTOM_VAR = "some value";
+      };
+    in {
+      checks = {
+        inherit whisper_ui;
+      };
+
+      packages.default = whisper_ui;
+
+      apps.default = flake-utils.lib.mkApp {
+        drv = whisper_ui;
+      };
+
+      devShells.default = craneLib.devShell {
+        # Inherit inputs from checks.
+        checks = self.checks.${system};
+
+        # Additional dev-shell environment variables can be set directly
+        # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
+
+        # Extra inputs can be added here; cargo and rustc are provided by default.
+        packages = [
+          # pkgs.ripgrep
+        ];
+      };
+    });
 }
