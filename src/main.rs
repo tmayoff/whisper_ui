@@ -3,7 +3,7 @@ mod models;
 
 use anyhow::Result;
 use iced::{
-    widget::{button, row, text},
+    widget::{button, column, horizontal_space, row, scrollable, text, text_editor, text_input},
     Sandbox, Settings,
 };
 use models::WhisperModel;
@@ -20,9 +20,11 @@ fn main() -> iced::Result {
 struct App {
     file_to_process: Option<PathBuf>,
     selected_model: WhisperModel,
+    error: Option<String>,
+    transcription: Option<text_editor::Content>,
 }
 
-fn whisper_process(model: WhisperModel, file: &Path) -> Result<()> {
+fn whisper_process(model: WhisperModel, file: &Path) -> Result<String> {
     println!("Processing: {:?}...", file);
     let model_file = download_model(model).expect("Failed to get model file");
 
@@ -39,15 +41,15 @@ fn whisper_process(model: WhisperModel, file: &Path) -> Result<()> {
     let mut state = ctx.create_state()?;
     state.full(params, &audio[..])?;
 
+    let mut text = String::new();
     let num_segments = state.full_n_segments()?;
     for i in 0..num_segments {
         let segment = state.full_get_segment_text(i)?;
-        println!("{}", segment);
+        text.push_str(&segment);
+        text.push('\n');
     }
 
-    println!("Done.");
-
-    Ok(())
+    Ok(text)
 }
 
 impl Sandbox for App {
@@ -57,6 +59,8 @@ impl Sandbox for App {
         App {
             file_to_process: None,
             selected_model: WhisperModel::Base,
+            error: None,
+            transcription: None,
         }
     }
 
@@ -77,24 +81,45 @@ impl Sandbox for App {
                 }
             }
             Message::Process(file) => {
-                _ = whisper_process(self.selected_model, &file);
+                let text = whisper_process(self.selected_model, &file);
+                match text {
+                    Ok(t) => self.transcription = Some(text_editor::Content::with_text(&t)),
+                    Err(e) => self.error = Some(format!("{:?}", e)),
+                }
             }
             Message::SelectModel(_) => todo!(),
+            Message::TranscriptionUpdate(action) => {
+                if let Some(t) = &mut self.transcription {
+                    t.perform(action);
+                }
+            }
         }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
-        let header = row![text("whisper").size(20),].align_items(iced::Alignment::Center);
+        let header = row![text("whisper ui").size(30), horizontal_space()].spacing(10);
 
-        let mut content = row![];
-        content = match &self.file_to_process {
-            Some(file) => {
-                content.push(button("Process File").on_press(Message::Process(file.to_owned())))
-            }
-            None => content.push(button("Select File").on_press(Message::SelectFile)),
+        let controls = match &self.file_to_process {
+            Some(file) => column![
+                text(file.to_str().unwrap()).size(20),
+                button("Process File").on_press(Message::Process(file.to_owned()))
+            ]
+            .align_items(iced::Alignment::Center)
+            .spacing(10)
+            .padding(10),
+            None => column![button("Select File").on_press(Message::SelectFile)],
         };
 
-        row![header, content].into()
+        let mut content = row![controls];
+        if let Some(t) = &self.transcription {
+            content = content.push(text_editor(t).on_action(Message::TranscriptionUpdate));
+        }
+
+        column![header, content]
+            .align_items(iced::Alignment::Center)
+            .spacing(10)
+            .padding(10)
+            .into()
     }
 }
 
@@ -102,5 +127,6 @@ impl Sandbox for App {
 enum Message {
     SelectModel(WhisperModel),
     SelectFile,
+    TranscriptionUpdate(text_editor::Action),
     Process(PathBuf),
 }
