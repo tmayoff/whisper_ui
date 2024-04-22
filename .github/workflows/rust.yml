@@ -1,4 +1,4 @@
-name: Rust
+name: Build and Test
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  cargo_build:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -25,3 +25,11 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+
+  nix_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@v10
+
+      - run: nix build
