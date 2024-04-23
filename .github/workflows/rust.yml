@@ -18,7 +18,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
     - uses: federicocarboni/setup-ffmpeg@v3.1
 
     - name: Build
