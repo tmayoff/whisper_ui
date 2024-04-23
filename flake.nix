@@ -23,7 +23,8 @@
       pkgs = nixpkgs.legacyPackages.${system};
 
       craneLib = crane.lib.${system};
-      whisper_ui = craneLib.buildPackage {
+      whisper_ui = craneLib.buildPackage rec {
+        pname = "whisper";
         src = craneLib.cleanCargoSource (craneLib.path ./.);
         strictDeps = true;
 
@@ -31,24 +32,30 @@
         OPENSSL_DIR = "${pkgs.openssl.dev}";
         OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
         OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
-        LIBCLANG_PATH="${pkgs.llvmPackages.libclang}/lib";
+        LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
+        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}";
 
         nativeBuildInputs = with pkgs; [
-          libclang
+          makeWrapper
+          cmake
+          pkg-config
         ];
 
-        buildInputs = with pkgs;
-          [
-            pkg-config
-            openssl
-          ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-            # Additional darwin specific inputs can be set here
-            pkgs.libiconv
-          ];
+        buildInputs = with pkgs; [
+          libxkbcommon
+          wayland
+          openssl
+        ];
 
-        # Additional environment variables can be set directly
-        # MY_CUSTOM_VAR = "some value";
+        postInstall = ''
+          wrapProgram $out/bin/${pname} \
+            --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath buildInputs}
+        '';
+
+        # ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+        #   # Additional darwin specific inputs can be set here
+        #   pkgs.libiconv
+        # ];
       };
     in {
       checks = {
@@ -65,13 +72,12 @@
         # Inherit inputs from checks.
         checks = self.checks.${system};
 
-        # Additional dev-shell environment variables can be set directly
-        # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
-
-        # Extra inputs can be added here; cargo and rustc are provided by default.
-        packages = [
-          # pkgs.ripgrep
-        ];
+        OPENSSL_DIR = "${pkgs.openssl.dev}";
+        OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+        OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
+        LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
+        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath whisper_ui.buildInputs}";
+        packages = [];
       };
     });
 }
