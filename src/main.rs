@@ -1,6 +1,5 @@
 mod audio;
 mod models;
-mod theme;
 mod whisper;
 
 use iced::{
