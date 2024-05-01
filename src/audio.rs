@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{io::Read, path::Path};
+use std::path::Path;
 
 const SAMPLE_RATE: u32 = 16000;
 
@@ -39,9 +39,9 @@ pub fn read_audio(file: &Path) -> Result<Vec<f32>> {
     Ok(audio_f32)
 }
 
-pub fn read_audio_ffmpeg(file: &Path) -> Result<Vec<f32>> {
+pub fn _read_audio_ffmpeg(_file: &Path) -> Result<Vec<f32>> {
     // ffmpeg::init().unwrap();
-    let mut audio: Vec<f32> = Vec::new();
+    // let mut audio: Vec<f32> = Vec::new();
     // let mut ictx = ffmpeg::format::input(&file)?;
     // let input = ictx
     //     .streams()
@@ -136,5 +136,5 @@ pub fn read_audio_ffmpeg(file: &Path) -> Result<Vec<f32>> {
     //     }
     // }
 
-    Ok(audio)
+    Ok(Vec::new())
 }

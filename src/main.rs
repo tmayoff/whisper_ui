@@ -1,8 +1,8 @@
 mod audio;
 mod models;
+mod theme;
 mod whisper;
 
-use anyhow::Result;
 use iced::{
     widget::{button, column, horizontal_space, row, text},
     Command,
@@ -13,7 +13,9 @@ use std::path::PathBuf;
 use whisper::State;
 
 fn main() -> iced::Result {
-    iced::program("whisper ui", App::update, App::view).run()
+    iced::program("whisper ui", App::update, App::view)
+        .theme(App::theme)
+        .run()
 }
 
 struct App {
@@ -37,6 +39,10 @@ impl App {
             error: None,
             transcription: None,
         }
+    }
+
+    fn theme(&self) -> iced::Theme {
+        iced::Theme::CatppuccinMocha
     }
 
     fn update(&mut self, event: Message) -> Command<Message> {
@@ -67,7 +73,7 @@ impl App {
                     t.state = State::Finished(s);
                 }
             }
-            Message::Error(_) => todo!(),
+            Message::Error(e) => self.error = Some(e),
         }
 
         Command::none()
