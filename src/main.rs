@@ -2,18 +2,18 @@ mod audio;
 mod models;
 mod whisper;
 
-use async_std::println;
+use anyhow::Result;
 use iced::{
-    executor,
     widget::{button, column, horizontal_space, row, text},
-    Application, Command, Sandbox, Settings, Theme,
+    Command,
 };
 use models::WhisperModel;
 use rfd::FileDialog;
 use std::path::PathBuf;
+use whisper::State;
 
 fn main() -> iced::Result {
-    App::run(Settings::default())
+    iced::program("whisper ui", App::update, App::view).run()
 }
 
 struct App {
@@ -23,29 +23,23 @@ struct App {
     transcription: Option<whisper::Transcription>,
 }
 
-impl Application for App {
-    type Message = Message;
-    type Theme = Theme;
-    type Executor = executor::Default;
-    type Flags = ();
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
-        (
-            App {
-                file_to_process: None,
-                selected_model: WhisperModel::Base,
-                error: None,
-                transcription: None,
-            },
-            Command::none(),
-        )
+impl App {
+    fn new() -> Self {
+        App {
+            file_to_process: None,
+            selected_model: WhisperModel::Base,
+            error: None,
+            transcription: None,
+        }
     }
 
-    fn title(&self) -> String {
-        format!("WhisperUI")
-    }
-
-    fn update(&mut self, event: Self::Message) -> Command<Message> {
+    fn update(&mut self, event: Message) -> Command<Message> {
         match event {
             Message::SelectFile => {
                 let file = FileDialog::new().pick_file();
@@ -54,21 +48,32 @@ impl Application for App {
                         self.transcription = Some(whisper::Transcription::new(&f));
                         self.file_to_process = Some(f);
                     }
-                    None => println!("File selection aborted"),
+                    None => {
+                        println!("File selection aborted");
+                    }
                 }
             }
             Message::Process => match &mut self.transcription {
-                Some(t) => t.process(),
-                None => println!("no file to transcribe"),
+                Some(t) => {
+                    return t.process();
+                }
+                None => {
+                    println!("no file to transcribe");
+                }
             },
             Message::SelectModel(m) => println!("Selected model {:?}", m),
-            Message::Processed => println!("Processed file"),
+            Message::Processed(s) => {
+                if let Some(t) = &mut self.transcription {
+                    t.state = State::Finished(s);
+                }
+            }
+            Message::Error(_) => todo!(),
         }
 
         Command::none()
     }
 
-    fn view(&self) -> iced::Element<'_, Self::Message> {
+    fn view(&self) -> iced::Element<Message> {
         let header = row![text("whisper ui").size(30), horizontal_space()].spacing(10);
 
         let controls = match &self.file_to_process {
@@ -94,19 +99,13 @@ impl Application for App {
             .padding(10)
             .into()
     }
-
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
-        match &self.transcription {
-            Some(t) => t.subscription().map(|_| Message::Processed),
-            None => iced::Subscription::none(),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     SelectModel(WhisperModel),
+    Error(String),
     SelectFile,
     Process,
-    Processed,
+    Processed(String),
 }

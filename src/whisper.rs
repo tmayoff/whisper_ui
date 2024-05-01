@@ -5,23 +5,23 @@ use crate::{
 };
 use anyhow::Result;
 use iced::{
-    subscription,
     widget::{text, Column},
-    Element, Subscription,
+    Command, Element,
 };
 use std::path::{Path, PathBuf};
 use whisper_rs::{FullParams, WhisperContext, WhisperContextParameters};
 
+#[derive(Clone)]
 pub struct Transcription {
     file: PathBuf,
-    state: State,
+    pub state: State,
 }
 
-enum State {
+#[derive(Clone)]
+pub enum State {
     Idle,
-    Ready(PathBuf),
-    Transcribing,
     Finished(String),
+    Transcribing,
 }
 
 impl Transcription {
@@ -36,40 +36,23 @@ impl Transcription {
         let mut content = Column::new();
         match self.state {
             State::Idle => content = content.push(text("Waiting to transcribe")),
-            State::Ready(_) => content = content.push(text("Starting transcription")),
-            State::Transcribing => content = content.push(text("Transcribing")),
             State::Finished(_) => content = content.push(text("Finished transcribing")),
+            State::Transcribing => content = content.push(text("Transcribing")),
         }
 
         content.into()
     }
 
-    pub fn process(&mut self) {
-        self.state = State::Idle
-    }
-
-    pub fn subscription(&self) -> Subscription<i32> {
-        match self.state {
-            State::Transcribing => {
-                subscription::unfold(0, State::Ready(self.file.clone()), move |state| {
-                    process_async(state, WhisperModel::Small)
-                })
-            }
-            _ => Subscription::none(),
-        }
-    }
-}
-
-async fn process_async(state: State, model: WhisperModel) -> (i32, State) {
-    match state {
-        State::Ready(f) => {
-            let p = process(model, &f).await.expect("Failed to transcribe");
-
-            (0, State::Finished(p))
-        }
-        State::Transcribing => todo!(),
-        State::Finished(_) => iced::futures::future::pending().await,
-        State::Idle => todo!(),
+    pub fn process(&mut self) -> Command<Message> {
+        self.state = State::Transcribing;
+        let file = self.file.clone();
+        Command::perform(
+            async move { process(WhisperModel::Small, &file).await },
+            |res| match res {
+                Ok(s) => Message::Processed(s),
+                Err(e) => Message::Error(e.to_string()),
+            },
+        )
     }
 }
 
