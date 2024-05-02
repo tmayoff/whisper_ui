@@ -3,7 +3,7 @@ mod models;
 mod whisper;
 
 use iced::{
-    widget::{button, column, horizontal_space, row, text},
+    widget::{button, column, horizontal_space, row, text, text_editor},
     Command,
 };
 use models::WhisperModel;
@@ -69,10 +69,15 @@ impl App {
             Message::SelectModel(m) => println!("Selected model {:?}", m),
             Message::Processed(s) => {
                 if let Some(t) = &mut self.transcription {
-                    t.state = State::Finished(s);
+                    t.finished(&s);
                 }
             }
             Message::Error(e) => self.error = Some(e),
+            Message::EditorUpdate(e) => {
+                if let Some(t) = &mut self.transcription {
+                    t.update(e);
+                }
+            }
         }
 
         Command::none()
@@ -113,4 +118,5 @@ enum Message {
     SelectFile,
     Process,
     Processed(String),
+    EditorUpdate(text_editor::Action),
 }

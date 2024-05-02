@@ -5,22 +5,22 @@ use crate::{
 };
 use anyhow::Result;
 use iced::{
-    widget::{text, Column},
+    widget::{text, text_editor, Column},
     Command, Element,
 };
 use std::path::{Path, PathBuf};
 use whisper_rs::{FullParams, WhisperContext, WhisperContextParameters};
 
-#[derive(Clone)]
 pub struct Transcription {
     file: PathBuf,
-    pub state: State,
+    state: State,
+    editor: Option<text_editor::Content>,
 }
 
 #[derive(Clone)]
 pub enum State {
     Idle,
-    Finished(String),
+    Finished,
     Transcribing,
 }
 
@@ -29,6 +29,7 @@ impl Transcription {
         Self {
             file: file.to_path_buf(),
             state: State::Idle,
+            editor: None,
         }
     }
 
@@ -36,9 +37,16 @@ impl Transcription {
         let mut content = Column::new();
         match self.state {
             State::Idle => content = content.push(text("Waiting to transcribe")),
-            State::Finished(_) => content = content.push(text("Finished transcribing")),
+            State::Finished => content = content.push(text("Finished transcribing")),
             State::Transcribing => content = content.push(text("Transcribing")),
         }
+
+        let editor = self
+            .editor
+            .as_ref()
+            .map(|e| text_editor(&e).on_action(Message::EditorUpdate));
+
+        content = content.push_maybe(editor);
 
         content.into()
     }
@@ -53,6 +61,17 @@ impl Transcription {
                 Err(e) => Message::Error(e.to_string()),
             },
         )
+    }
+
+    pub fn finished(&mut self, transcription: &str) {
+        self.state = State::Finished;
+        self.editor = Some(text_editor::Content::with_text(transcription))
+    }
+
+    pub fn update(&mut self, action: text_editor::Action) {
+        if let Some(e) = &mut self.editor {
+            e.perform(action);
+        }
     }
 }
 
