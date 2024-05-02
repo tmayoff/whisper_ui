@@ -2,12 +2,37 @@ use anyhow::Result;
 use hf_hub::{api::sync::Api, Repo};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub enum WhisperModel {
     Tiny,
+    #[default]
     Small,
     Base,
     Large,
+}
+
+impl WhisperModel {
+    pub const ALL: [WhisperModel; 4] = [
+        WhisperModel::Tiny,
+        WhisperModel::Small,
+        WhisperModel::Base,
+        WhisperModel::Large,
+    ];
+}
+
+impl std::fmt::Display for WhisperModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                WhisperModel::Tiny => "Tiny",
+                WhisperModel::Small => "Small",
+                WhisperModel::Base => "Base",
+                WhisperModel::Large => "Large",
+            }
+        )
+    }
 }
 
 fn get_model_filenaame(model: WhisperModel) -> String {

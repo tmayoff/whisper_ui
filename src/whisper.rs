@@ -60,7 +60,7 @@ impl Transcription {
         let mut content = Column::new();
         match self.state {
             State::Idle => content = content.push(text("Waiting to transcribe")),
-            State::Finished => content = content.push(text("Finished transcribing")),
+            State::Finished => (),
             State::Transcribing => content = content.push(text("Transcribing")),
         }
 
