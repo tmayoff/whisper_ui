@@ -1,7 +1,6 @@
 use crate::{
     audio,
     models::{download_model, WhisperModel},
-    Message,
 };
 use anyhow::Result;
 use iced::{
@@ -24,6 +23,13 @@ pub enum State {
     Transcribing,
 }
 
+#[derive(Debug, Clone)]
+pub enum Event {
+    Process(WhisperModel),
+    Processed(String),
+    EditorUpdate(text_editor::Action),
+}
+
 impl Transcription {
     pub fn new(file: &Path) -> Self {
         Self {
@@ -33,7 +39,24 @@ impl Transcription {
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn update(&mut self, event: Event) -> Command<crate::Message> {
+        match event {
+            Event::EditorUpdate(a) => {
+                if let Some(e) = &mut self.editor {
+                    e.perform(a);
+                }
+            }
+            Event::Process(model) => return self.process(model),
+            Event::Processed(s) => {
+                self.state = State::Finished;
+                self.editor = Some(text_editor::Content::with_text(&s));
+            }
+        }
+
+        Command::none()
+    }
+
+    pub fn view(&self) -> Element<crate::Message> {
         let mut content = Column::new();
         match self.state {
             State::Idle => content = content.push(text("Waiting to transcribe")),
@@ -44,34 +67,27 @@ impl Transcription {
         let editor = self
             .editor
             .as_ref()
-            .map(|e| text_editor(&e).on_action(Message::EditorUpdate));
+            .map(|e| text_editor(&e).on_action(|a| Self::wrap_event(Event::EditorUpdate(a))));
 
         content = content.push_maybe(editor);
 
         content.into()
     }
 
-    pub fn process(&mut self) -> Command<Message> {
+    pub fn process(&mut self, model: WhisperModel) -> Command<crate::Message> {
         self.state = State::Transcribing;
         let file = self.file.clone();
         Command::perform(
-            async move { process(WhisperModel::Small, &file).await },
+            async move { process(model, &file).await },
             |res| match res {
-                Ok(s) => Message::Processed(s),
-                Err(e) => Message::Error(e.to_string()),
+                Ok(s) => crate::Message::TranscriptionEvent(Event::Processed(s)),
+                Err(e) => crate::Message::Error(e.to_string()),
             },
         )
     }
 
-    pub fn finished(&mut self, transcription: &str) {
-        self.state = State::Finished;
-        self.editor = Some(text_editor::Content::with_text(transcription))
-    }
-
-    pub fn update(&mut self, action: text_editor::Action) {
-        if let Some(e) = &mut self.editor {
-            e.perform(action);
-        }
+    fn wrap_event(event: Event) -> crate::Message {
+        crate::Message::TranscriptionEvent(event)
     }
 }
 

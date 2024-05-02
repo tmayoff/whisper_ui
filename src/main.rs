@@ -3,13 +3,12 @@ mod models;
 mod whisper;
 
 use iced::{
-    widget::{button, column, horizontal_space, row, text, text_editor},
+    widget::{button, column, horizontal_space, row, text},
     Command,
 };
 use models::WhisperModel;
 use rfd::FileDialog;
 use std::path::PathBuf;
-use whisper::State;
 
 fn main() -> iced::Result {
     iced::program("whisper ui", App::update, App::view)
@@ -58,24 +57,17 @@ impl App {
                     }
                 }
             }
-            Message::Process => match &mut self.transcription {
-                Some(t) => {
-                    return t.process();
-                }
-                None => {
-                    println!("no file to transcribe");
-                }
-            },
-            Message::SelectModel(m) => println!("Selected model {:?}", m),
-            Message::Processed(s) => {
-                if let Some(t) = &mut self.transcription {
-                    t.finished(&s);
-                }
+            Message::Process => {
+                // Forward events to the transcription 'widget'
+                return self.update(Message::TranscriptionEvent(whisper::Event::Process(
+                    self.selected_model,
+                )))
             }
+            Message::SelectModel(m) => println!("Selected model {:?}", m),
             Message::Error(e) => self.error = Some(e),
-            Message::EditorUpdate(e) => {
+            Message::TranscriptionEvent(m) => {
                 if let Some(t) = &mut self.transcription {
-                    t.update(e);
+                    return t.update(m);
                 }
             }
         }
@@ -117,6 +109,5 @@ enum Message {
     Error(String),
     SelectFile,
     Process,
-    Processed(String),
-    EditorUpdate(text_editor::Action),
+    TranscriptionEvent(whisper::Event),
 }
