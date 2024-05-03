@@ -2,6 +2,10 @@
 name = "whisper"
 version = "0.1.0"
 edition = "2021"
+description = "A simple GUI for traanscribing audio files"
+
+[package.metadata.bundle]
+name="whisper ui"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
