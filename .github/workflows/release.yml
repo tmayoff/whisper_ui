@@ -19,12 +19,10 @@ jobs:
       - uses: federicocarboni/setup-ffmpeg@v3.1
 
       - name: Install cargo-bundle
-        run: cargo install --git https://github.com/tmayoff/cargo-bundle.git --branch appimage
+        run: cargo install cargo-packager --locked
+
+      - name: Build
+        run: cargo build --release
   
-      - name: Compile and release linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: cargo bundle --format appimage
-      
-      - name: Compile and release
-        if: ${{ matrix.os != 'ubuntu-latest' }}
-        run: cargo bundle
+      - name: Bundle release
+        run: cargo packager --release
