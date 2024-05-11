@@ -11,7 +11,7 @@ product-name = "whisper ui"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.82"
+anyhow = "1.0.83"
 async-std = { version = "1.12.0", default-features = false }
 catppuccin = "2.2.0"
 hf-hub = "0.3.2"
