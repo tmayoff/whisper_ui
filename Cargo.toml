@@ -12,7 +12,7 @@ product-name = "whisper ui"
 
 [dependencies]
 anyhow = "1.0.86"
-async-std = { version = "1.12.0", default-features = false }
+async-std = { version = "1.13.0", default-features = false }
 catppuccin = "2.2.0"
 hf-hub = "0.3.2"
 iced = { version = "0.13.0-dev", features = ["async-std"], git = "https://github.com/iced-rs/iced.git" }
