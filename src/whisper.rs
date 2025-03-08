@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use iced::{
     widget::{text, text_editor, Column},
-    Command, Element,
+    Element, Task,
 };
 use std::path::{Path, PathBuf};
 use whisper_rs::{FullParams, WhisperContext, WhisperContextParameters};
@@ -39,7 +39,7 @@ impl Transcription {
         }
     }
 
-    pub fn update(&mut self, event: Event) -> Command<crate::Message> {
+    pub fn update(&mut self, event: Event) -> Task<crate::Message> {
         match event {
             Event::EditorUpdate(a) => {
                 if let Some(e) = &mut self.editor {
@@ -53,7 +53,7 @@ impl Transcription {
             }
         }
 
-        Command::none()
+        Task::none()
     }
 
     pub fn view(&self) -> Element<crate::Message> {
@@ -74,10 +74,10 @@ impl Transcription {
         content.into()
     }
 
-    pub fn process(&mut self, model: WhisperModel) -> Command<crate::Message> {
+    pub fn process(&mut self, model: WhisperModel) -> Task<crate::Message> {
         self.state = State::Transcribing;
         let file = self.file.clone();
-        Command::perform(
+        Task::perform(
             async move { process(model, &file).await },
             |res| match res {
                 Ok(s) => crate::Message::TranscriptionEvent(Event::Processed(s)),

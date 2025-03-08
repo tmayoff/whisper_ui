@@ -4,18 +4,16 @@ mod audio;
 mod models;
 mod whisper;
 
-use iced::{
-    widget::{
-        button, column, combo_box, container, horizontal_rule, horizontal_space, row, text, tooltip,
-    },
-    Command,
+use iced::widget::{
+    button, column, combo_box, container, horizontal_rule, horizontal_space, row, text, tooltip,
 };
+use iced::Task;
 use models::WhisperModel;
 use rfd::FileDialog;
 use std::path::PathBuf;
 
 fn main() -> iced::Result {
-    iced::program("whisper ui", App::update, App::view)
+    iced::application("whisper ui", App::update, App::view)
         .theme(App::theme)
         .run()
 }
@@ -49,7 +47,7 @@ impl App {
         iced::Theme::CatppuccinMocha
     }
 
-    fn update(&mut self, event: Message) -> Command<Message> {
+    fn update(&mut self, event: Message) -> Task<Message> {
         match event {
             Message::SelectFile => {
                 let file = FileDialog::new().pick_file();
@@ -79,13 +77,13 @@ impl App {
             }
         }
 
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> iced::Element<Message> {
         let header = row![text("whisper ui").size(30), horizontal_space()]
             .spacing(10)
-            .align_items(iced::Alignment::Center);
+            .align_y(iced::Alignment::Center);
 
         let filename = self
             .file_to_process
@@ -128,10 +126,10 @@ impl App {
                     .as_ref()
                     .map(whisper::Transcription::view),
             )
-            .align_items(iced::Alignment::Center);
+            .align_x(iced::Alignment::Center);
 
         column![header, content]
-            .align_items(iced::Alignment::Center)
+            .align_x(iced::Alignment::Center)
             .spacing(10)
             .padding(10)
             .into()

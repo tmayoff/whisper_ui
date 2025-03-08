@@ -22,7 +22,14 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      craneLib = crane.lib.${system};
+      libPath = with pkgs;
+        lib.makeLibraryPath [
+          libGL
+          libxkbcommon
+          wayland
+        ];
+
+      craneLib = crane.mkLib pkgs;
       whisper_ui = craneLib.buildPackage rec {
         pname = "whisper";
         src = craneLib.cleanCargoSource (craneLib.path ./.);
@@ -33,7 +40,7 @@
         OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
         OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
         LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
-        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}";
+        LD_LIBRARY_PATH = libPath;
 
         nativeBuildInputs = with pkgs; [
           makeWrapper
@@ -51,11 +58,6 @@
           wrapProgram $out/bin/${pname} \
             --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath buildInputs}
         '';
-
-        # ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-        #   # Additional darwin specific inputs can be set here
-        #   pkgs.libiconv
-        # ];
       };
     in {
       checks = {
@@ -76,8 +78,11 @@
         OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
         OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
         LIBCLANG_PATH = "${pkgs.libclang.lib}/lib/";
-        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath whisper_ui.buildInputs}";
-        packages = [];
+
+        LD_LIBRARY_PATH = libPath;
+        packages = with pkgs; [
+          rust-analyzer
+        ];
       };
     });
 }
