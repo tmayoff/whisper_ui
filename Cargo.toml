@@ -18,4 +18,4 @@ hf-hub = "0.3.2"
 iced = { version = "0.13.1", features = ["async-std"] }
 once_cell = "1.19.0"
 rfd = "0.14.1"
-whisper-rs = "0.11.1"
+whisper-rs = "0.14.2"
